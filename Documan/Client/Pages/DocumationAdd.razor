@@ -1,0 +1,278 @@
+﻿@page "/Documationadd"
+@inject HttpClient Http
+@using System.Text.Json
+@using Documan.Shared.Models
+@using System.Net.Http.Headers
+@layout MainLayout
+@inject NavigationManager NavMan
+@inject IToastService toast
+@inject IJSRuntime JS
+
+
+<div class="container">
+
+    <div id="mainBox">
+
+        <div id="header">
+            <h2>Döküman Ekleme İşlemi</h2>
+        </div>
+
+        <div class="forms">
+
+            <div class="levelBox">
+                <label>Ana Menü : </label>
+                <select id="level" @onchange="getSubMenuLookUp">
+                    @foreach (var item in mainMenuList)
+                    {
+                        <option value="@item.id">@item.name</option>
+                    }
+                    <option selected="selected" hidden="hidden"></option>  @* default value yaptık ve hide yaptık*@
+                </select>
+            </div>
+
+            <br />
+
+            <div>
+                <label>Alt Menü :</label>
+                <select @onchange="changeLabel">
+                    @foreach (var item in subMenuList)
+                    {
+                        <option value="@item.id">@item.name</option>
+                    }
+                    <option selected="selected" hidden="hidden"></option>  @* default value yaptık ve hide yaptık*@
+                </select>
+            </div>
+
+            <br />
+
+            <div>
+
+                <InputFile OnChange="@OnInputFileChange" multiple />
+
+                @if (fileName.Count > 0)
+                {
+                    <ul>
+                        @foreach (var name in fileName)
+                        {
+                            <li>
+                                File: @name
+                                <br>
+                                <span>
+                                    Stored File Name: @GetStoredFileName(name)
+                                </span>
+                               @* <button class="btn btn-primary" id="button" @onclick="@(() => DownloadFile(@GetStoredFileName(name), name ))">
+                                    Download file
+                                </button>*@
+                            </li>
+                        }
+                    </ul>
+                }
+
+            </div>
+
+            <br />
+
+            <div class="description">
+
+                <label> İçerik : </label>
+
+                <input type="text" id="inputLabel" placeholder="Info - İçeriği Yazınız..." @bind-value="@info">
+
+                <input type="text" id="menuAuth" placeholder="Yetki Seviyesini Yazınız. (0-1-2)" @bind-value="@auth">
+
+            </div>
+
+            <div class="description">
+
+                <label> Döküman Adı : </label>
+
+                <input type="text" id="inputLabel" placeholder="Döküman Adını Giriniz..." @bind-value="@name">
+
+
+
+            </div>
+
+            @*   <div class="lengBox">
+            <label> Dil : </label>
+            <select id="level" @bind="@lang">
+            <option value="0"> TR - Türkçe</option>
+            <option value="1">ENG - English</option>
+            </select>
+            </div>*@
+
+            <br />
+
+        </div>
+
+        <div style="">
+            @* @onclick="DownloadFile">*@
+            <button class="btn btn-primary" id="button"
+                    @onclick="@(() => DownloadFile(name, file_path, info))">
+                Ekle
+            </button>
+            @*@onclick="@(() => DownloadFile(name, file_path, info))" >*@
+        </div>
+
+    </div>
+</div>
+
+
+@code {
+
+    public string upLevelValue { get; set; } //ana seviye input
+    public string subMenu { get; set; }
+    public string desc { get; set; } // tanım
+    public string menuOrder { get; set; }
+    public string auth { get; set; }
+    List<DocMenuSysModel> mainMenuList = new List<DocMenuSysModel>();
+    List<DocMenuSysModel> subMenuList = new List<DocMenuSysModel>();
+
+
+    private int maxAllowedFiles = int.MaxValue;
+    private long maxFileSize = long.MaxValue; //max dosya boyutu için
+    private List<string> fileName = new();
+    // private string fileName = "";
+
+    private List<DocMenuSysModel> docMenuResults = new();
+
+    public string name { get; set; }
+    public string file_path { get; set; }
+    public string info { get; set; }
+
+    List<DocMenuSysModel> req = new List<DocMenuSysModel>();
+
+    // LookUp ' lara veri getiriliyor.
+    protected override async Task OnInitializedAsync()
+    {
+        var apiRes = await Http.GetFromJsonAsync<JsonElement>($"api/MenuOperations/getUpLevelsLookUp");
+        ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(apiRes));
+        mainMenuList = response.data.ToObject<List<DocMenuSysModel>>();
+    }
+
+    // seviyeyi ayarlama lookUp doldurma
+    private async Task getSubMenuLookUp(ChangeEventArgs e)
+    {
+        if (String.IsNullOrEmpty(subMenu))
+        {
+            upLevelValue = e.Value.ToString(); // değeri bind ettik
+            DocMenuSysModel res1 = mainMenuList.Where(x => x.id == Convert.ToInt32(upLevelValue)).FirstOrDefault();
+            desc = res1.name;
+            menuOrder = res1.menu_order.ToString();
+            auth = res1.auth_level.ToString();
+            name = res1.name.ToString();
+            file_path = res1.file_path;
+            info = res1.info.ToString();
+
+        }
+
+        if (!String.IsNullOrEmpty(subMenu))
+        {
+            upLevelValue = e.Value.ToString(); // değeri bind ettik
+            DocMenuSysModel res1 = mainMenuList.Where(x => x.id == Convert.ToInt32(upLevelValue)).FirstOrDefault();
+            desc = res1.name;
+            menuOrder = res1.menu_order.ToString();
+            auth = res1.auth_level.ToString();
+            name = res1.name.ToString();
+            file_path = res1.file_path;
+            info = res1.info.ToString();
+
+
+            await changeLabel(null);
+        }
+
+        var apiRes = await Http.GetFromJsonAsync<JsonElement>($"api/MenuOperations/getSubLevelsLookUp/{upLevelValue}");
+        ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(apiRes));
+        subMenuList = response.data.ToObject<List<DocMenuSysModel>>();
+    }
+
+    private async Task changeLabel(ChangeEventArgs e)
+    {
+        subMenu = e.Value.ToString(); // değeri bind ettik
+
+        if (!String.IsNullOrEmpty(subMenu))
+        {
+            DocMenuSysModel res2 = subMenuList.Where(y => y.id == Convert.ToInt32(subMenu)).FirstOrDefault();
+            desc = res2.name;
+            menuOrder = res2.menu_order.ToString();
+            auth = res2.auth_level.ToString();
+        }
+    }
+
+    //----------------------------------------------------------------------------------//
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+
+        using var content = new MultipartFormDataContent();
+
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));//dosyanın contenti ve id name boyutu hepsi var
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+            fileName.Add(file.Name);
+
+            content.Add(
+                content: fileContent,
+                name: "\"files\"",
+                fileName: file.Name);
+
+        }
+
+        var response = await Http.PostAsync($"/api/DocumentOperations/setUploadFile/{name}/{file_path}/{info}", content);
+        var newUploadResults = await response.Content.ReadFromJsonAsync<List<DocMenuSysModel>>();
+
+        if (newUploadResults is not null)
+        {
+            docMenuResults = docMenuResults.Concat(newUploadResults).ToList();
+        }
+
+    }
+
+    private async Task DownloadFile()
+    {
+        file_path = "contentType";
+
+        var response = await Http.GetAsync($"/api/DocumentOperations/getDownloadFile");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await JS.InvokeVoidAsync("alert", "File not found.");
+        }
+        else
+        {
+            var fileStream = response.Content.ReadAsStream();
+            using var streamRef = new DotNetStreamReference(stream: fileStream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", streamRef);
+        }
+    }
+
+    //dosya indirme işlemleri parametreli ÇALIŞTIĞINDA SQL VERİ GÖNDERİYOR
+    private async Task DownloadFile(string name, string file_path, string info)
+    {
+        file_path = "Dosya file_path";
+
+        var response = await Http.GetAsync($"/api/DocumentOperations/getDownloadFile/{name}/{file_path}/{info}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await JS.InvokeVoidAsync("alert", "File not found.");
+        }
+        else
+        {
+            var fileStream = response.Content.ReadAsStream();
+            using var streamRef = new DotNetStreamReference(stream: fileStream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", name, file_path, info, streamRef);
+        }
+    }
+
+    private string? GetStoredFileName(string name)
+    {
+        var uploadResult = docMenuResults.SingleOrDefault(f => 
+            f.name == name );
+        if (uploadResult is not null)
+            return uploadResult.StoredFileName;
+
+        return "File not found.";
+    }
+}

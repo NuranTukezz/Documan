@@ -1,0 +1,318 @@
+﻿@inherits LayoutComponentBase
+@page "/Dashboard"
+@using Documan.Shared
+@using Documan.Shared.Models
+@using System.Text.Json
+@inject NavigationManager NavMan
+@inject HttpClient Http
+@inject IToastService toast
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+
+<BlazoredToasts Timeout="5" Position="Blazored.Toast.Configuration.ToastPosition.BottomRight" />
+
+<body class="hold-transition sidebar-mini">
+
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <!-- Left navbar links -->
+            <div style="margin-left:55px;">
+                <ul class="navbar-nav">
+
+                    @*<li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                    </li>*@
+                    <li class="nav-item d-none d-sm-inline-block">
+                        <a href="#" class="nav-link">Ana Sayfa</a>
+                    </li>
+                    <li class="nav-item d-none d-sm-inline-block">
+                        <a href="#" class="nav-link">İletişim</a>
+                    </li>
+
+                </ul>
+            </div>
+
+            <!-- Right navbar links -->
+            <ul class="navbar-nav ml-auto">
+                <!-- Navbar Search -->
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+                        <i class="fas fa-search"></i>
+                    </a>
+                    <div class="navbar-search-block">
+                        <form class="form-inline">
+                            <div class="input-group input-group-sm">
+                                <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
+                                <div class="input-group-append">
+                                    <button class="btn btn-navbar" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+        <!-- /.navbar -->
+        <!-- Main Sidebar Container -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4" style="width: 300px;">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Sidebar user panel (optional) -->
+                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                    <div class="user-panel mt-4 pb-3 mb-3 d-flex">
+                        <div class="image">
+                           @* <img src="dist/img/axata.jpg" style="width:250px; border-radius: 8px;" alt="User Image">*@ @*class="img-circle elevation-5" *@
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SidebarSearch Form -->
+                <div class="form-inline">
+                    <div class="input-group" data-widget="sidebar-search">
+                        <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search">
+                        <div class="input-group-append">
+                            <button class="btn btn-sidebar">
+                                <i class="fas fa-search fa-fw"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                @*side menu*@
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+
+                        @foreach (var item in MenuList)
+                        {
+                            @if (item.menu_level == 0 && item.auth_level == auth_level)
+                            {
+                                <li class="nav-item">
+
+                                    @*Birinci katman*@
+                                    <a href="" class="nav-link active" style="width:auto">
+                                        <i class="fa fa-book"></i>
+                                        <p style="padding-left:6px;">
+                                            @item.name
+                                            <i class="right fas fa-angle-left"></i>
+                                        </p>
+                                    </a>
+                                    @*Birinci katman*@
+
+                                    @*ikinci katman*@
+                                    <ul class="nav nav-treeview">
+                                        @foreach (var secondLayer in MenuList)
+                                        {
+                                            SideMenuListModel secondLayerHaveTree = MenuList.Where(x => x.up_level == secondLayer.id).FirstOrDefault();
+
+                                            if (item.id == secondLayer.up_level && secondLayerHaveTree == null)
+                                            {
+                                                <li class="nav-item">
+                                                    <a href="" class="nav-link" style="width:auto">
+                                                        <i class="far fa-circle nav-icon"></i>
+                                                        <p style="padding-right:6px;">
+                                                            @secondLayer.name
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                            }
+                                            else if (item.id == secondLayer.up_level && secondLayerHaveTree != null)
+                                            {
+                                                <li class="nav-item">
+                                                    <a href="" class="nav-link" style="width:auto">
+                                                        <i class="far fa-circle nav-icon"></i>
+                                                        <p>
+                                                            @secondLayer.name
+                                                            <i class="right fas fa-angle-left"></i>
+                                                        </p>
+                                                    </a>
+
+                                                    <ul class="nav nav-treeview">
+
+                                                        @*üçüncü katman*@
+                                                        @foreach (var thirdLayer in MenuList)
+                                                        {
+                                                            SideMenuListModel thirdLayerHaveTree = MenuList.Where(y => y.up_level == thirdLayer.id).FirstOrDefault();
+
+                                                            @if (secondLayer.id == thirdLayer.up_level && thirdLayerHaveTree == null)
+                                                            {
+                                                                <li class="nav-item">
+                                                                    <a href="" class="nav-link" style="width:auto">
+                                                                        <i class="far fa-dot-circle nav-icon"></i>
+                                                                        <p>@thirdLayer.name</p>
+                                                                    </a>
+                                                                </li>
+                                                            }
+
+                                                            else if (secondLayer.id == thirdLayer.up_level && thirdLayerHaveTree != null)
+                                                            {
+                                                                <li class="nav-item">
+                                                                    @*Dördüncü katman*@
+
+                                                                    <a href="" class="nav-link" style="width:auto">
+                                                                        <i class="far fa-dot-circle nav-icon"></i>
+                                                                        <p>
+                                                                            @thirdLayer.name
+                                                                            <i class="right fas fa-angle-left"></i>
+                                                                        </p>
+                                                                    </a>
+
+                                                                    @foreach (var fourthLayer in MenuList)
+                                                                    {
+                                                                        SideMenuListModel fourthLayerHaveTree = MenuList.Where(z => z.up_level == fourthLayer.id).FirstOrDefault();
+
+                                                                        @if (thirdLayer.id == fourthLayer.up_level && fourthLayerHaveTree == null)
+                                                                        {
+                                                                            <ul class="nav nav-treeview">
+                                                                                <li class="nav-item">
+                                                                                    <a href="" class="nav-link" style="width:auto">
+                                                                                        <i class="far fa-copy nav-icon"></i>
+                                                                                        <p>@fourthLayer.name</p>
+                                                                                    </a>
+                                                                                </li>
+
+                                                                            </ul>
+                                                                        }
+                                                                    }
+                                                                </li>
+                                                                @*Dördüncü katman*@
+                                                            }
+                                                        }
+
+                                                        @*üçüncü katman bitiş*@
+                                                    </ul>
+                                                </li>
+                                            }
+                                        }
+                                    </ul>
+                                </li>
+                            }
+                        }
+
+                        @*admin menu, Buraya giriş yapan user bilgileri ile auth leveli öğrenilcek ve if le ayıralacak*@
+                        @if (auth_level == 1)
+                        {
+                            <li class="nav-item">
+
+                                <a href="#" class="nav-link active" style="width:auto">
+                                    <i class="nav-icon fas fa-user"></i>
+                                    <p>
+                                        Admin Menü
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
+                                </a>
+
+                                <ul class="nav nav-treeview">
+
+                                    <li class="nav-item">
+                                        <a href="#" class="nav-link" style="width:auto">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Menü İşlemleri
+                                                <i class="right fas fa-angle-left"></i>
+                                            </p>
+                                        </a>
+                                        <ul class="nav nav-treeview">
+                                            <li class="nav-item">
+                                                <a href="/MenuAdd" class="nav-link" style="width:auto">
+                                                    <i class="far fa-dot-circle nav-icon"></i>
+                                                    <p>Menü Ekle</p>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a href="/MenuUpdate" class="nav-link" style="width:auto">
+                                                    <i class="far fa-dot-circle nav-icon"></i>
+                                                    <p>Menü Güncelle</p>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a href="#" class="nav-link" style="width:auto">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Döküman İşlemleri
+                                                <i class="right fas fa-angle-left"></i>
+                                            </p>
+                                        </a>
+                                        <ul class="nav nav-treeview">
+                                            <li class="nav-item">
+                                                <a href="DocumationAdd" class="nav-link" style="width:auto">
+                                                    <i class="far fa-dot-circle nav-icon"></i>
+                                                    <p>Döküman Ekle</p>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a href="DocumationUpdate" class="nav-link" style="width:auto">
+                                                    <i class="far fa-dot-circle nav-icon"></i>
+                                                    <p>Döküman Güncelle</p>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        @*admin menu *@
+
+                    </ul>
+                </nav>
+                @*side menu*@
+            </div>
+            <!-- /.sidebar -->
+        </aside>
+
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <div class="container">
+                @Body
+            </div>
+        </div>
+        <!-- /.content-wrapper -->
+        <!-- Control Sidebar -->
+        <aside class="control-sidebar control-sidebar-dark">
+            <!-- Control sidebar content goes here -->
+        </aside>
+        <!-- /.control-sidebar -->
+        <!-- Main Footer -->
+        <footer class="main-footer">
+            <div style="margin-left: 55px;">
+                <strong>Copyright &copy; 2022 <a href="https://www.documan.com.tr/">www.documan.com.tr</a>.</strong>
+                <div class="float-right d-none d-sm-inline-block"></div>
+
+            </div>
+
+        </footer>
+    </div>
+
+</body>
+
+
+@code {
+    public List<SideMenuListModel>? MenuList;
+    public int auth_level { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ResponseModel isValid = await Http.GetFromJsonAsync<ResponseModel>("api/Authorization/CheckAuth");
+        if (!isValid.success)
+        {
+            NavMan.NavigateTo("/");
+            toast.ShowError($"{isValid.data}");
+        }
+        else
+        {
+            auth_level = await sessionStorage.GetItemAsync<int>("auth_level"); //session dan auth değerimizi aldık
+
+            var apiRes = await Http.GetFromJsonAsync<JsonElement>("api/SideMenuList/SideMenuGetList");
+            ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(apiRes));
+            MenuList = response.data.ToObject<List<SideMenuListModel>>();
+        }
+
+    }
+}

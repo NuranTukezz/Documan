@@ -1,0 +1,97 @@
+﻿body {
+  
+}
+
+select {
+    height: 35px;
+    width: 350px;
+    border-radius: 7px;
+}
+
+#mainBox {
+    /*background-color: #343a40;*/
+    /*color: rgb(220, 211, 211);*/
+    /*margin: 0px 0px 0px 250px;*/
+    /*    padding: 40px 0px 0px 65px;*/
+    color: #2c2a2a;
+    margin: auto;
+    padding: inherit;
+   /* border-style: dotted;*/
+    /*border-radius: 25px;*/
+    height: 750px;
+    /*width: 550px;*/
+}
+
+#header {
+    margin-bottom: 35px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    justify-content: center;
+    border-bottom: 8px solid #2c2a2a;
+}
+
+.forms {
+    font-size: 19px;
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 35px;
+}
+
+.description {
+    font-size:19px;
+    margin-left:220px;
+    margin-bottom:40px;
+}
+
+#menuOrder {
+    margin-left: 15px;
+    width: 100px;
+    height: 35px;
+    border-radius: 6px;
+}
+
+#menuAuth {
+    margin-left: 15px;
+    width: 60px;
+    height: 35px;
+    border-radius: 6px;
+}
+
+#inputLabel{
+    width: 450px;
+    height:35px;
+    border-radius:6px;
+}
+
+#button {
+    margin-left:350px;
+    width:350px;
+    font-size: 20px;
+    border-radius:12px;
+}
+
+/*.levelBox {
+    padding: 0px 0px 40px 0px;
+}
+
+.upLevelBox {
+    padding: 0px 0px 40px 0px;
+}
+
+.description {
+    padding: 0px 0px 40px 0px;
+}
+
+select {
+    height: 30px;
+    border-radius: 6px
+}
+
+#inputLabel {
+    height: 35px;
+    border-radius: 5px
+}
+
+#button{
+    margin-left:20%
+}
+

@@ -1,0 +1,108 @@
+﻿@page "/"
+@using Documan.Shared
+@using Documan.Shared.Models
+@using System.Text.Json
+@inject HttpClient Http
+@layout LoginLayout
+@inject NavigationManager NavMan
+@inject IToastService toast
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+
+<div class="sidenav">
+    <div class="login-main-text">
+        <h1>Documan<br> Dökümantasyon</h1>
+        <p>Oturum açmak için giriş yapınız veya kaydolun.</p>
+    </div>
+</div>
+<div class="main">
+    <div class="col-md-6 col-sm-12">
+        <div class="login-form">
+            <!--login Form-->
+            <EditForm Model="@loginModel">
+                <div class="form-group">
+                    <label>User Name</label>
+                    <input type="text" class="form-control" @bind-value="loginModel.username" placeholder="User Name">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" class="form-control" placeholder="Password" @bind-value="loginModel.password">
+                </div>
+
+                <div class="forgetPass">
+                    <a @onclick="ForgetPassModal">Şifremi Unuttum</a>
+                </div>
+
+                <button type="submit" class="btn btn-black" @onclick="Entry">Giriş</button>
+                <button  class="btn btn-secondary " @onclick="registerModal">Kayıt Ol</button>
+            </EditForm>
+            <!--login Form-->
+        </div>
+    </div>
+</div>
+
+<style>
+    /*modal için style içerden verilmesi gerekiyor*/
+    .my-custom-class {
+        background-color: #343a40;
+        margin:auto;
+        width: 600px;
+        border-radius:25px;
+    }
+</style>
+
+@code {
+    LoginCheckModel loginModel = new LoginCheckModel();
+
+    [CascadingParameter]
+    IModalService Modal { get; set; } = default!;
+
+    private async Task Entry()
+    {
+        string username = loginModel.username;
+        string password = loginModel.password;
+
+        var apiRes = await Http.GetFromJsonAsync<JsonElement>($"api/Login/LoginCheck/{username}/{password}");
+        ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(apiRes));
+
+        if (response.success == true)
+        {
+            await sessionStorage.SetItemAsync("auth_level", response.data); //session'a auth değerimizi attık            
+            NavMan.NavigateTo("/Documationadd");
+        }
+        else
+        {
+            toast.ShowError($"{response.data}");
+        }
+    }
+
+    public void registerModal()
+    {
+        var options = new ModalOptions()
+            {                
+                Position = ModalPosition.Middle,
+                Class = "my-custom-class",
+                //DisableBackgroundCancel = false,
+                HideHeader = true
+        };
+
+        Modal.Show<Register>("", options);
+    }
+
+    private async Task ForgetPassModal()
+    {
+
+        var options = new ModalOptions()
+            {
+                Position = ModalPosition.Middle,
+                Class = "my-custom-class",
+                //DisableBackgroundCancel = false,
+                HideHeader = true
+            };
+
+        Modal.Show<ForgetPass>("", options);
+    }
+
+
+}
+
+

@@ -1,0 +1,79 @@
+﻿@page "/Register"
+@using Documan.Shared.Models
+@using System.Text.Json
+@using System.Text
+@inject HttpClient Http
+@inject IToastService toast
+
+
+<section class="" style="height: 420px;">
+
+    <div class="card " style="border-radius: 15px; background-color:#343a40;">
+        <div class="card-body p-5">
+            <h4 class="text-uppercase text-center mb-5">Yeni Kullanıcı Oluştur</h4>
+
+            <EditForm Model="@loginModel" OnValidSubmit="Clicked">
+
+                <div class="form-outline mb-3">
+                    <input type="text" id="form3Example1cg" class="form-control form-control-lg" @bind-value="loginModel.username" placeholder="User Name" />
+                    <label class="form-label" for="form3Example1cg">Kullanıcı Adı</label>
+                </div>
+
+                <div class="form-outline mb-3">
+                    <input type="password" id="form3Example4cg" class="form-control form-control-lg" @bind-value="loginModel.password" placeholder="Password" />
+                    <label class="form-label" for="form3Example4cg">Şifre</label>
+                </div>
+                                
+                <div class="d-flex justify-content-center">
+                    <button type="submit"
+                            class="btn btn-primary" style="width:220px; font-size:21px; margin-bottom:10px;">
+                        Kayıt Ol
+                    </button>
+                </div> 
+
+                
+
+            </EditForm>
+
+        </div>
+    </div>
+</section>
+
+
+@code {
+    [CascadingParameter]
+    IModalService Modal { get; set; } = default!;
+
+    [CascadingParameter]
+    BlazoredModalInstance ModalOne { get; set; } = default!;
+
+    LoginCheckModel loginModel = new LoginCheckModel();
+
+    private async Task Clicked()
+    {
+        string userName = loginModel.username;
+        string password = loginModel.password;
+
+        var check = await Http.GetFromJsonAsync<JsonElement>($"api/Login/RegisterCheck/{userName}/{password}");
+        ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(check));
+
+        if (response.success == true)
+        {     
+            toast.ShowSuccess($"{response.data}");
+
+        }
+        else if(response.success == false)
+        {
+            toast.ShowWarning($"{response.data}");
+        }
+
+        Close();
+    }
+
+ 
+
+    //ASYNC bir şekilde işlem sonrasında Pop Up kapatılıyor
+    private async Task Close() => await ModalOne.CloseAsync();
+
+}
+

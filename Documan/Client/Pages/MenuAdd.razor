@@ -1,0 +1,127 @@
+﻿@page "/MenuAdd"
+@inject HttpClient Http
+@using System.Text.Json
+@using Documan.Shared.Models
+@inject IToastService toast
+@layout MainLayout
+@inject NavigationManager NavMan
+
+
+<div class="container">
+
+    <div id="mainBox">
+
+        <div id="header">
+            <h2>Menü Ekleme İşlemi</h2>
+        </div>
+
+        <div class="forms">
+
+            <div class="levelBox">
+                <label>Seviye : </label>
+                <select id="level" @onchange="getUpLevelsLookUp">
+                    <option value="0">0 (Ana Menü)</option>
+                    <option value="1">1 (Alt Menü)</option>
+                    <option selected="selected" hidden="hidden"></option>  @* default value yaptık ve hide yaptık*@
+                </select>
+
+
+            </div>
+
+            <div class="upLevelBox">
+                <label>Üst Seviye :</label>
+                <select id="upLevel" disabled="@isDisabled" @bind="@upLevelValue">
+
+                    @foreach (var item in req)
+                    {
+                        <option value="@item.id">@item.name</option>
+                    }
+
+                    <option selected="selected" hidden="hidden"></option>  @* default value yaptık ve hide yaptık*@
+                </select>
+            </div>
+        </div>
+
+        @*<div class="description">
+            <label>Menu Sırası : </label>
+            <input type="text" id="inputLabel" placeholder="Menü Tanımı Giriniz..." @bind-value="@desc">
+        </div>*@
+
+
+        <div class="description">
+
+            <label>Tanım : </label>
+            <input type="text" id="inputLabel" placeholder="Menü Tanımı Giriniz..." @bind-value="@desc">
+
+            <input type="text" id="menuOrder" placeholder="Menü Sırası" @bind-value="@menuOrder">
+
+            <input type="text" id="menuAuth" placeholder="Yetki" @bind-value="@auth">
+
+        </div>
+
+        <div style="">
+            <button @onclick="addMenuItem" 
+                    class="btn btn-primary" id= "button">
+                Menü Ekle
+            </button>
+        </div>
+
+
+    </div>
+
+</div>
+
+
+@code {
+    string levelValue = ""; //seviye input
+    public string upLevelValue { get; set; } //üst seviye input
+    public string desc { get; set; } // tanım
+    public string menuOrder { get; set; } //Menü sırası
+    public string auth { get; set; } //menüye ulaşabilecek yetki seviyesi
+    public bool isDisabled { get; set; }
+
+    List<SideMenuListModel> req = new List<SideMenuListModel>();
+
+    private async Task getUpLevelsLookUp(ChangeEventArgs e)
+    {
+        levelValue = e.Value.ToString();
+
+        if (levelValue == "0")
+        {
+            upLevelValue = "";
+            isDisabled = true;
+        }
+
+        if (levelValue == "1")
+        {
+            var apiRes = await Http.GetFromJsonAsync<JsonElement>($"api/MenuOperations/getUpLevelsLookUp");
+            ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(apiRes));
+            req = response.data.ToObject<List<SideMenuListModel>>();
+            isDisabled = false;
+        }
+    }
+
+    private async Task addMenuItem()
+    {
+        if (string.IsNullOrEmpty(upLevelValue)) upLevelValue = "null"; // boşken apiye gitmiyor nedense ?
+        if (string.IsNullOrEmpty(menuOrder)) menuOrder = "0"; 
+        if (string.IsNullOrEmpty(auth)) auth = "0";
+
+        var req = await Http.GetFromJsonAsync<JsonElement>($"api/MenuOperations/addMenuItem/{levelValue}/{upLevelValue}/{desc}/{menuOrder}/{auth}");
+        ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(req));
+
+        if (response.success == true)
+        {
+            NavMan.NavigateTo("/MenuAdd", true);  //true diyerek ForceLoad ile render ettik
+            //toast.ShowSuccess("Başarılı..!");
+        }
+        else if (response.success == false)
+        {
+            toast.ShowWarning($"{response.data}");
+        }
+
+    }
+
+
+
+}

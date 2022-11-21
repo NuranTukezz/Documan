@@ -1,0 +1,146 @@
+﻿@page "/MenuUpdate"
+@inject HttpClient Http
+@using System.Text.Json
+@using Documan.Shared.Models
+@layout MainLayout
+@inject IToastService toast
+
+<div class="container">
+
+    <div id="mainBox">
+
+        <div id="header">
+            <h2>Menü Güncelleme ve Silme İşlemi</h2>
+        </div>
+        <div class="forms">
+
+            <div class="levelBox">
+                <label>Ana Menü : </label>
+                <select id="level" @onchange="getSubMenuLookUp">
+                    @foreach (var item in mainMenuList)
+                    {
+                        <option value="@item.id">@item.name</option>
+                    }
+                    <option selected="selected" hidden="hidden"></option>  @* default value yaptık ve hide yaptık*@
+                </select>
+            </div>
+
+            <div>
+                <label>Alt Menü :</label>
+                <select @onchange="changeLabel">
+                    @foreach (var item in subMenuList)
+                    {
+                        <option value="@item.id">@item.name</option>
+                    }
+                    <option selected="selected" hidden="hidden"></option>  @* default value yaptık ve hide yaptık*@
+                </select>
+            </div>
+        </div>
+
+        <div class="description">
+
+            <label>Tanım : </label>
+            <input type="text" id="inputLabel" placeholder="Menü Tanımı Giriniz..." @bind-value="@desc">
+
+            <input type="text" id="menuOrder" placeholder="Menü Sırası" @bind-value="@menuOrder">
+
+            <input type="text" id="menuAuth" placeholder="Yetki" @bind-value="@auth">
+
+        </div>
+
+        <div class="buttonDiv">
+
+            <button @*@onclick="addMenuItem" *@
+                    class="btn btn-success" id= "button">
+                Menü Güncelle
+            </button>
+
+            <button @*@onclick="addMenuItem"*@
+                    class="btn btn-danger" id="button">
+                Menü Sil
+            </button>
+        </div>
+
+
+    </div>
+
+</div>
+
+@code {
+    public string upLevelValue { get; set; } //ana seviye input
+    public string subMenu { get; set; }
+    public string desc { get; set; } // tanım
+    public string menuOrder { get; set; }
+    public string auth { get; set; }
+    List<SideMenuListModel> mainMenuList = new List<SideMenuListModel>();
+    List<SideMenuListModel> subMenuList = new List<SideMenuListModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var apiRes = await Http.GetFromJsonAsync<JsonElement>($"api/MenuOperations/getUpLevelsLookUp");
+        ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(apiRes));
+        mainMenuList = response.data.ToObject<List<SideMenuListModel>>();
+    }
+
+
+    private async Task getSubMenuLookUp(ChangeEventArgs e)
+    {
+        if (String.IsNullOrEmpty(subMenu))
+        {
+            upLevelValue = e.Value.ToString(); // değeri bind ettik
+            SideMenuListModel res1 = mainMenuList.Where(x => x.id == Convert.ToInt32(upLevelValue)).FirstOrDefault();
+            desc = res1.name;
+            menuOrder = res1.menu_order.ToString();
+            auth = res1.auth_level.ToString();
+        }
+
+        if (!String.IsNullOrEmpty(subMenu))
+        {
+            upLevelValue = e.Value.ToString(); // değeri bind ettik
+            SideMenuListModel res1 = mainMenuList.Where(x => x.id == Convert.ToInt32(upLevelValue)).FirstOrDefault();
+            desc = res1.name;
+            menuOrder = res1.menu_order.ToString();
+            auth = res1.auth_level.ToString();
+
+            await changeLabel(null);
+        }
+
+        var apiRes = await Http.GetFromJsonAsync<JsonElement>($"api/MenuOperations/getSubLevelsLookUp/{upLevelValue}");
+        ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(apiRes));
+        subMenuList = response.data.ToObject<List<SideMenuListModel>>();
+    }
+
+
+    private async Task changeLabel(ChangeEventArgs e)
+    {
+        subMenu = e.Value.ToString(); // değeri bind ettik
+
+        if (!String.IsNullOrEmpty(subMenu))
+        {
+            SideMenuListModel res2 = subMenuList.Where(y => y.id == Convert.ToInt32(subMenu)).FirstOrDefault();
+            desc = res2.name;
+            menuOrder = res2.menu_order.ToString();
+            auth = res2.auth_level.ToString();
+        }
+    }
+
+    //private async Task addMenuItem()
+    //{
+    //    if (string.IsNullOrEmpty(upLevelValue)) upLevelValue = "null"; // boşken apiye gitmiyor nedense ?
+
+    //    var mainMenuList = await Http.GetFromJsonAsync<JsonElement>($"api/MenuOperations/addMenuItem/{levelValue}/{upLevelValue}/{desc}");
+    //    ResponseModel response = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(JsonSerializer.Serialize(mainMenuList));
+
+    //    if (response.success == true)
+    //    {
+    //        //NavMan.NavigateTo("/MenuAdd"); refresh
+    //        toast.ShowSuccess("Başarılı..!");
+
+    //    }
+    //    else if (response.success == false)
+    //    {
+    //        toast.ShowWarning($"{response.data}");
+    //    }
+
+    //}
+}
